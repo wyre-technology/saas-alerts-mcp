@@ -34,6 +34,14 @@ function startHttpServer(): void {
 
     const handle = async () => {
       const server = createServer();
+      // SECURITY-CRITICAL invariant: this transport MUST stay stateless
+      // (sessionIdGenerator: undefined + enableJsonResponse: true). Per-request
+      // tenant credentials are carried in an AsyncLocalStorage context opened by
+      // runWithCredentials() below. A stateless request->single-response flow
+      // keeps the tool call inside that context. Switching to a stateful/SSE
+      // transport (sessionIdGenerator set, persistent stream) would let a
+      // long-lived connection serve later messages under a stale/foreign
+      // credential context — re-review tenant isolation before changing this.
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
         enableJsonResponse: true,
