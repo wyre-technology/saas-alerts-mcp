@@ -23,16 +23,23 @@ jobs:
       image-name: ghcr.io/wyre-technology/saas-alerts-mcp
     secrets: inherit
 
-  deploy:
-    needs: release
-    if: needs.release.outputs.released == 'true'
-    permissions:
-      id-token: write
-      contents: read
-    uses: wyre-technology/.github/.github/workflows/mcp-server-deploy.yml@7794e75666ac4956274f7a7d25dabacd56c96bbc
-    with:
-      vendor-slug: saas-alerts
-      image-name: ghcr.io/wyre-technology/saas-alerts-mcp
-      digest: ${{ needs.release.outputs.digest }}
-      version: ${{ needs.release.outputs.version }}
-    secrets: inherit
+  # NOTE: the prod deploy job is intentionally deferred. The canonical pipeline
+  # adds a `deploy` job that updates the `gwp-saas-alerts` Azure Container App in
+  # `mcp-gateway-prod` by digest. That ACA does not exist until the vendor is
+  # provisioned in the gateway/Conduit IaC (vendor-config.ts + vendor-fleet
+  # bicep). Re-add the standard `deploy` job below once the vendor is wired into
+  # the fleet and a prod rollout is approved:
+  #
+  #   deploy:
+  #     needs: release
+  #     if: needs.release.outputs.released == 'true'
+  #     permissions:
+  #       id-token: write
+  #       contents: read
+  #     uses: wyre-technology/.github/.github/workflows/mcp-server-deploy.yml@7794e75666ac4956274f7a7d25dabacd56c96bbc
+  #     with:
+  #       vendor-slug: saas-alerts
+  #       image-name: ghcr.io/wyre-technology/saas-alerts-mcp
+  #       digest: ${{ needs.release.outputs.digest }}
+  #       version: ${{ needs.release.outputs.version }}
+  #     secrets: inherit
