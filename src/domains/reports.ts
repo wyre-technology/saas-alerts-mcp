@@ -99,6 +99,11 @@ async function handleCall(
     }
 
     case 'saas_alerts_reports_create_scheduled': {
+      const cancelled = await guardDestructive(
+        extra?.server,
+        `Create a new scheduled report with the provided configuration. Confirm to proceed.`
+      );
+      if (cancelled) return cancelled;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = await client.reports.createScheduled(args.body as any);
       return ok(data);

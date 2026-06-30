@@ -1,6 +1,6 @@
 # Contributor License Agreement
 
-Thank you for your interest in contributing to Huntress MCP ("the Project"). This Contributor License Agreement ("Agreement") documents the rights granted by contributors to the Project.
+Thank you for your interest in contributing to SaaS Alerts MCP ("the Project"). This Contributor License Agreement ("Agreement") documents the rights granted by contributors to the Project.
 
 ## Agreement
 

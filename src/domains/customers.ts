@@ -157,12 +157,22 @@ async function handleCall(
     }
 
     case 'saas_alerts_customers_create': {
+      const cancelled = await guardDestructive(
+        extra?.server,
+        `Create a new customer with the provided body. Confirm to proceed.`
+      );
+      if (cancelled) return cancelled;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = await client.customers.create(args.body as any);
       return ok(data);
     }
 
     case 'saas_alerts_customers_update': {
+      const cancelled = await guardDestructive(
+        extra?.server,
+        `Update customer ${args.customer_id} with the provided fields. Confirm to proceed.`
+      );
+      if (cancelled) return cancelled;
       const data = await client.customers.update(
         args.customer_id as string,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

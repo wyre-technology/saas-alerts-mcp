@@ -195,14 +195,12 @@ async function handleCall(
     }
 
     case 'saas_alerts_events_query_advanced': {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = await client.events.queryAdvanced(args.query as any);
+      const data = await client.events.queryAdvanced({ query: args.query as Record<string, unknown> });
       return emptyGuard(data, 'events');
     }
 
     case 'saas_alerts_events_count_advanced': {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = await client.events.countAdvanced(args.query as any);
+      const data = await client.events.countAdvanced({ query: args.query as Record<string, unknown> });
       return ok(data);
     }
 

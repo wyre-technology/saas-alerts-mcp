@@ -4,7 +4,6 @@ import { getNavigationTools, DOMAINS } from '../domains/navigation.js';
 vi.mock('../utils/client.js', () => ({
   getCredentials: () => null,
   getClient: () => { throw new Error('No credentials'); },
-  resetClient: () => {},
 }));
 
 describe('Navigation', () => {

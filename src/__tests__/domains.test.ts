@@ -48,7 +48,6 @@ const mockClient = {
 vi.mock('../utils/client.js', () => ({
   getClient: () => mockClient,
   getCredentials: () => ({ apiKey: 'test-key' }),
-  resetClient: () => {},
 }));
 
 beforeEach(() => vi.clearAllMocks());
@@ -66,6 +65,39 @@ describe('events domain', () => {
     );
     expect(res.isError).toBeFalsy();
     expect(res.content[0].text).toContain('e1');
+  });
+
+  it('events_query maps user_email, start_date, end_date to SDK camelCase opts', async () => {
+    const { eventsHandler } = await import('../domains/events.js');
+    mockClient.events.query.mockResolvedValueOnce([{ id: 'e3' }]);
+    await eventsHandler.handleCall('saas_alerts_events_query', {
+      user_email: 'user@test.com',
+      start_date: '2026-01-01T00:00:00Z',
+      end_date: '2026-12-31T23:59:59Z',
+    });
+    expect(mockClient.events.query).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userEmail: 'user@test.com',
+        start: '2026-01-01T00:00:00Z',
+        end: '2026-12-31T23:59:59Z',
+      })
+    );
+  });
+
+  it('events_query_advanced wraps query in body object', async () => {
+    const { eventsHandler } = await import('../domains/events.js');
+    const esQuery = { term: { alertStatus: 'critical' } };
+    mockClient.events.queryAdvanced.mockResolvedValueOnce([{ id: 'e4' }]);
+    await eventsHandler.handleCall('saas_alerts_events_query_advanced', { query: esQuery });
+    expect(mockClient.events.queryAdvanced).toHaveBeenCalledWith({ query: esQuery });
+  });
+
+  it('events_count_advanced wraps query in body object', async () => {
+    const { eventsHandler } = await import('../domains/events.js');
+    const esQuery = { match_all: {} };
+    mockClient.events.countAdvanced.mockResolvedValueOnce({ count: 7 });
+    await eventsHandler.handleCall('saas_alerts_events_count_advanced', { query: esQuery });
+    expect(mockClient.events.countAdvanced).toHaveBeenCalledWith({ query: esQuery });
   });
 
   it('events_query empty result is flagged isError', async () => {
