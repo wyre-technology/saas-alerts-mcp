@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Thin caller for the canonical reusable release pipeline (build →
+# semantic-release → Docker → MCP Registry → security). Lives in
+# wyre-technology/.github so every *-mcp repo stays in lockstep.
+jobs:
+  release:
+    permissions:
+      contents: write
+      issues: write
+      packages: write
+      id-token: write
+      security-events: write
+    uses: wyre-technology/.github/.github/workflows/mcp-server-release.yml@7794e75666ac4956274f7a7d25dabacd56c96bbc
+    with:
+      server-name: saas-alerts-mcp
+      image-name: ghcr.io/wyre-technology/saas-alerts-mcp
+    secrets: inherit
+
+  deploy:
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: wyre-technology/.github/.github/workflows/mcp-server-deploy.yml@7794e75666ac4956274f7a7d25dabacd56c96bbc
+    with:
+      vendor-slug: saas-alerts
+      image-name: ghcr.io/wyre-technology/saas-alerts-mcp
+      digest: ${{ needs.release.outputs.digest }}
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit

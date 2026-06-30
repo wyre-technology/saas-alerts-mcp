@@ -1,0 +1,66 @@
+services:
+  saas-alerts-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: saas-alerts-mcp:latest
+    container_name: saas-alerts-mcp-server
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SAAS_ALERTS_API_KEY=${SAAS_ALERTS_API_KEY}
+      - MCP_SERVER_NAME=${MCP_SERVER_NAME:-saas-alerts-mcp}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - NODE_ENV=production
+      - MCP_TRANSPORT=http
+      - MCP_HTTP_PORT=8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - saas-alerts-mcp-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  saas-alerts-mcp-dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    image: saas-alerts-mcp:dev
+    container_name: saas-alerts-mcp-dev
+    working_dir: /app
+    restart: "no"
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - SAAS_ALERTS_API_KEY=${SAAS_ALERTS_API_KEY}
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - saas-alerts-mcp-dev-logs:/app/logs
+    stdin_open: true
+    tty: true
+
+volumes:
+  saas-alerts-mcp-logs:
+    driver: local
+  saas-alerts-mcp-dev-logs:
+    driver: local
