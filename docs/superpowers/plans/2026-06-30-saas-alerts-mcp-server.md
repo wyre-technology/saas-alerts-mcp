@@ -956,3 +956,23 @@ This triggers `release.yml` → semantic-release publishes `ghcr.io/wyre-technol
 **Spec coverage:** all 28 functional tools from design §5.1 + 2 navigation tools present and tabulated; files/email/key-reset excluded ✓; elicitation guards on every W/D tool ✓; empty-result guard added (new vs template) ✓; dual transport + gateway header injection ✓; destructive-lint gate satisfied (delete tools carry ⚠ + destructiveHint) ✓.
 **Placeholder scan:** Tasks 6/7/8 specify remaining domains by exact tool name + SDK method + arg mapping + result helper rather than repeating full code; the events domain (Task 5) is the complete exemplar of the identical pattern, and `customers.ts` (Task 6) is shown in full as the write/destructive exemplar — engineers have a complete reference for both shapes. No "TODO"/"TBD".
 **Type consistency:** tool names match the canonical table and the fleet-integration plan's `tool-classification`/`result-cache`/canary references; SDK method names (`events.query`, `customers.delete`, `users.getMspUser`, …) match the SDK plan's **Produces**; `DomainHandler`/`CallToolResult` identical to `utils/types.ts`; gateway header `x-saas-alerts-api-key` ↔ canonical `X-SaaS-Alerts-API-Key`.
+
+---
+
+## SECURITY CORRECTION (post-implementation, 2026-06-30)
+
+**Tasks 2 & 3 originally specified the fleet template's gateway-auth pattern: writing each
+request's API key to `process.env.SAAS_ALERTS_API_KEY` and caching a module-level singleton
+client (`_client`/`_credKey`), with `resetClient()` on each request. An automated security
+review (CONFIRMED by an adversarial re-review) found this is a CROSS-TENANT CREDENTIAL LEAK:**
+the gateway/Conduit drive one container with many tenants' keys concurrently, and the
+`await server.connect` / `await handleRequest` yield points let request B overwrite the global
+key before request A's tool handler reads it — so A can execute with B's credentials.
+
+**Corrected pattern (shipped): request-scoped credentials via `AsyncLocalStorage`.**
+- `src/utils/client.ts`: a module-level `AsyncLocalStorage<Credentials>` (`credStore`), `runWithCredentials(creds, fn)`, `getCredentials()` reads `credStore.getStore()` then falls back to `process.env` (stdio mode), and `getClient()` returns `new SaasAlertsClient({apiKey})` per call. No `process.env` mutation, no singleton, `resetClient()` removed.
+- `src/http.ts`: the `/mcp` handler runs the whole per-request lifecycle inside `runWithCredentials({apiKey}, handle)`. The stateless transport (`sessionIdGenerator: undefined` + `enableJsonResponse: true`) keeps the tool call inside that ALS context — guarded by a SECURITY-CRITICAL comment.
+
+**Fleet-wide:** the original pattern came from `inforcer-mcp`; `inforcer-mcp` and likely every
+gateway-mode `*-mcp` server share this latent leak in production and need separate remediation.
+Future `*-mcp` builds should use the AsyncLocalStorage pattern above as the template.
