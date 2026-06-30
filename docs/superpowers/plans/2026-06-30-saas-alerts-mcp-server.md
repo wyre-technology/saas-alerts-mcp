@@ -973,6 +973,7 @@ key before request A's tool handler reads it — so A can execute with B's crede
 - `src/utils/client.ts`: a module-level `AsyncLocalStorage<Credentials>` (`credStore`), `runWithCredentials(creds, fn)`, `getCredentials()` reads `credStore.getStore()` then falls back to `process.env` (stdio mode), and `getClient()` returns `new SaasAlertsClient({apiKey})` per call. No `process.env` mutation, no singleton, `resetClient()` removed.
 - `src/http.ts`: the `/mcp` handler runs the whole per-request lifecycle inside `runWithCredentials({apiKey}, handle)`. The stateless transport (`sessionIdGenerator: undefined` + `enableJsonResponse: true`) keeps the tool call inside that ALS context — guarded by a SECURITY-CRITICAL comment.
 
-**Fleet-wide:** the original pattern came from `inforcer-mcp`; `inforcer-mcp` and likely every
-gateway-mode `*-mcp` server share this latent leak in production and need separate remediation.
-Future `*-mcp` builds should use the AsyncLocalStorage pattern above as the template.
+**Going forward:** future MCP servers should use the AsyncLocalStorage request-scoping
+pattern above as the template. The older "write per-request credentials to `process.env`
++ module-level singleton client" gateway-auth approach is unsafe under concurrent
+multi-tenant requests and should not be copied.
