@@ -1,7 +1,7 @@
 import { createServer as createHttpServer } from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createServer } from './server.js';
-import { getCredentials, resetClient } from './utils/client.js';
+import { getCredentials, runWithCredentials } from './utils/client.js';
 import { logger } from './utils/logger.js';
 
 function startHttpServer(): void {
@@ -30,29 +30,24 @@ function startHttpServer(): void {
       return;
     }
 
-    if (isGatewayMode) {
-      const apiKey = req.headers['x-saas-alerts-api-key'] as string;
-      if (apiKey) {
-        process.env.SAAS_ALERTS_API_KEY = apiKey;
-        resetClient();
-      }
-      // Don't reject — tools/list works without credentials
+    const apiKey = isGatewayMode ? (req.headers['x-saas-alerts-api-key'] as string | undefined) : undefined;
+
+    const handle = async () => {
+      const server = createServer();
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+        enableJsonResponse: true,
+      });
+      res.on('close', () => { transport.close(); server.close(); });
+      await server.connect(transport);
+      await transport.handleRequest(req, res);
+    };
+
+    if (apiKey) {
+      await runWithCredentials({ apiKey }, handle);
+    } else {
+      await handle();
     }
-
-    // Create fresh server + transport per request (stateless)
-    const server = createServer();
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-      enableJsonResponse: true,
-    });
-
-    res.on('close', () => {
-      transport.close();
-      server.close();
-    });
-
-    await server.connect(transport);
-    await transport.handleRequest(req, res);
   });
 
   httpServer.listen(port, host, () => {
