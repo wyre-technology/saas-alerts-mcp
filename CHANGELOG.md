@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Added `@vitest/coverage-v8` to `devDependencies` (matching the installed
+  `vitest@^2` major) so `npm run test:coverage` — run by the `Code Quality` CI
+  check — no longer fails with `Cannot find dependency '@vitest/coverage-v8'`.
+
 ### Fixed
 
 - `/health` liveness endpoint now returns an unconditional `200` instead of `503`
