@@ -17,7 +17,7 @@ jobs:
       packages: write
       id-token: write
       security-events: write
-    uses: wyre-technology/.github/.github/workflows/mcp-server-release.yml@7794e75666ac4956274f7a7d25dabacd56c96bbc
+    uses: wyre-technology/.github/.github/workflows/mcp-server-release.yml@a925b43adb22aa8885b8243e1056e6a42cdce4d1
     with:
       server-name: saas-alerts-mcp
       image-name: ghcr.io/wyre-technology/saas-alerts-mcp
